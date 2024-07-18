@@ -5,27 +5,50 @@ interface Appointment {
   name: string;
   birthDate: string;
   scheduleDate: string;
+  scheduleTime: string; // Added scheduleTime field
 }
 
 let appointments: Appointment[] = [];
 
+const isValidDate = (dateString: string): boolean => {
+  const date = new Date(dateString);
+  return !isNaN(date.getTime());
+};
+
 export const createAppointment = (req: Request, res: Response) => {
-  const { name, birthDate, scheduleDate } = req.body;
-  const appointmentDate = new Date(scheduleDate);
-  const appointmentHour = appointmentDate.getHours();
-  const appointmentDay = appointmentDate.toISOString().split("T")[0];
-  /* 
-  console.log("helloo");
-  console.log(appointments); */
+  const { name, birthDate, scheduleDate, scheduleTime } = req.body;
+
+  const formattedScheduleTime =
+    scheduleTime.length === 5 ? `${scheduleTime}:00` : scheduleTime;
+  const [hours, minutes] = formattedScheduleTime.split(":").map(Number);
+  const [year, month, day] = scheduleDate.split("-").map(Number);
+  const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
+
+  const localAppointmentHour = appointmentDateTime.getHours();
+  const localAppointmentDay = appointmentDateTime.toISOString().split("T")[0];
+
+  // Filter existing appointments by date and time
   const existingAppointments = appointments.filter((appointment) => {
-    const existingAppointmentDate = new Date(appointment.scheduleDate);
-    const existingAppointmentHour = existingAppointmentDate.getHours();
-    const existingAppointmentDay = existingAppointmentDate
+    const [apptHours, apptMinutes] = appointment.scheduleTime
+      .split(":")
+      .map(Number);
+    const [apptYear, apptMonth, apptDay] = appointment.scheduleDate
+      .split("-")
+      .map(Number);
+    const existingAppointmentDateTime = new Date(
+      apptYear,
+      apptMonth - 1,
+      apptDay,
+      apptHours,
+      apptMinutes
+    );
+    const localExistingAppointmentHour = existingAppointmentDateTime.getHours();
+    const localExistingAppointmentDay = existingAppointmentDateTime
       .toISOString()
       .split("T")[0];
     return (
-      existingAppointmentHour === appointmentHour &&
-      existingAppointmentDay === appointmentDay
+      localExistingAppointmentHour === localAppointmentHour &&
+      localExistingAppointmentDay === localAppointmentDay
     );
   });
 
@@ -40,8 +63,9 @@ export const createAppointment = (req: Request, res: Response) => {
     name,
     birthDate,
     scheduleDate,
+    scheduleTime: formattedScheduleTime,
   };
-
+  console.log(newAppointment);
   appointments.push(newAppointment);
 
   res.status(201).json(newAppointment);
@@ -49,4 +73,51 @@ export const createAppointment = (req: Request, res: Response) => {
 
 export const getAppointments = (req: Request, res: Response) => {
   res.status(200).json(appointments);
+};
+
+export const getAvailableHours = (req: Request, res: Response) => {
+  const { date } = req.query;
+
+  if (!date || typeof date !== "string") {
+    return res.status(400).json({ message: "Invalid date parameter." });
+  }
+
+  const targetDate = new Date(date);
+
+  const allHours = [
+    "08:00",
+    "09:00",
+    "10:00",
+    "11:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+  ];
+
+  // Count appointments for each hour
+  const appointmentCounts: Record<string, number> = {};
+  console.log(appointments);
+  console.log(date);
+  appointments
+    .filter((appointment) => appointment.scheduleDate === date)
+    .forEach((appointment) => {
+      // Remove seconds from scheduleTime
+      const scheduledTime = appointment.scheduleTime.slice(0, 5); // '08:00' format
+      if (appointmentCounts[scheduledTime]) {
+        appointmentCounts[scheduledTime]++;
+      } else {
+        appointmentCounts[scheduledTime] = 1;
+      }
+    });
+
+  const availableHours = allHours.map((hour) => ({
+    hour,
+    count: appointmentCounts[hour] || 0,
+  }));
+
+  res.status(200).json(availableHours);
+  console.log(availableHours);
 };
