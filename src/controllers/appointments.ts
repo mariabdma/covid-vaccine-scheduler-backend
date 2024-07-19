@@ -8,7 +8,7 @@ interface Appointment {
   scheduleTime: string; // Added scheduleTime field
 }
 
-let appointments: Appointment[] = [];
+export let appointments: Appointment[] = []; // Exporting appointments
 
 const isValidDate = (dateString: string): boolean => {
   const date = new Date(dateString);

@@ -11,6 +11,8 @@ app.use(cors());
 
 app.use("/api/appointments", appointmentRoutes);
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
+export { app, server };
