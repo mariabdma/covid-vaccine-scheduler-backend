@@ -5,10 +5,10 @@ interface Appointment {
   name: string;
   birthDate: string;
   scheduleDate: string;
-  scheduleTime: string; // Added scheduleTime field
+  scheduleTime: string;
 }
 
-export let appointments: Appointment[] = []; // Exporting appointments
+export let appointments: Appointment[] = [];
 
 const isValidDate = (dateString: string): boolean => {
   const date = new Date(dateString);
@@ -27,7 +27,6 @@ export const createAppointment = (req: Request, res: Response) => {
   const localAppointmentHour = appointmentDateTime.getHours();
   const localAppointmentDay = appointmentDateTime.toISOString().split("T")[0];
 
-  // Filter existing appointments by date and time
   const existingAppointments = appointments.filter((appointment) => {
     const [apptHours, apptMinutes] = appointment.scheduleTime
       .split(":")
@@ -97,15 +96,13 @@ export const getAvailableHours = (req: Request, res: Response) => {
     "18:00",
   ];
 
-  // Count appointments for each hour
   const appointmentCounts: Record<string, number> = {};
   console.log(appointments);
   console.log(date);
   appointments
     .filter((appointment) => appointment.scheduleDate === date)
     .forEach((appointment) => {
-      // Remove seconds from scheduleTime
-      const scheduledTime = appointment.scheduleTime.slice(0, 5); // '08:00' format
+      const scheduledTime = appointment.scheduleTime.slice(0, 5);
       if (appointmentCounts[scheduledTime]) {
         appointmentCounts[scheduledTime]++;
       } else {
